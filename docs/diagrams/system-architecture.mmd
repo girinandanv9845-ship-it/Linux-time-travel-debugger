@@ -1,0 +1,61 @@
+flowchart TD
+    subgraph Frontend["React + TypeScript + Vite Frontend"]
+        UI["IDE Workspace"]
+        Toolbar["Execution Toolbar"]
+        Editor["Source Code Editor"]
+        Timeline["Interactive Timeline"]
+        Regs["Register Inspector"]
+        Mem["Memory Inspector"]
+        Events["Event Log"]
+        Out["Program Output"]
+        WSClient["WebSocket Client"]
+    end
+
+    subgraph API["Backend API Layer (Crow HTTP/WS)"]
+        REST["REST API Endpoints (/api/debug/*)"]
+        WSServer["WebSocket Stream (/ws/debug/*)"]
+    end
+
+    subgraph Core["Core Engine"]
+        SessionMgr["Session Manager"]
+        ProcessMgr["Process Manager"]
+        Tracer["Tracing Engine (ptrace)"]
+        Recorder["Event Recorder (Monotonic Sequences)"]
+        CkptMgr["Checkpoint Manager"]
+        ReplayEng["Replay & Seek Engine"]
+    end
+
+    subgraph Target["Target Linux Process"]
+        Child["Spawned Child Process (x86_64)"]
+        Pipes["Stdout / Stderr Pipes"]
+    end
+
+    UI --> Toolbar & Editor & Timeline & Regs & Mem & Events & Out
+    Toolbar --> REST
+    Mem --> REST
+    Timeline --> REST
+    WSClient <--> WSServer
+
+    REST --> SessionMgr
+    WSServer <--> SessionMgr
+
+    SessionMgr --> ProcessMgr
+    SessionMgr --> Tracer
+    SessionMgr --> Recorder
+    SessionMgr --> CkptMgr
+    SessionMgr --> ReplayEng
+
+    ProcessMgr -- "fork + execv" --> Child
+    ProcessMgr -- "non-blocking read" --> Pipes
+    Child -- "stdout / stderr" --> Pipes
+
+    Tracer -- "PTRACE_TRACEME / PTRACE_SINGLESTEP" --> Child
+    Tracer -- "PTRACE_GETREGS" --> Child
+    Tracer -- "process_vm_readv / PTRACE_PEEKDATA" --> Child
+    Tracer -- "waitpid" --> Child
+
+    Tracer --> Recorder
+    Tracer --> CkptMgr
+    Recorder --> ReplayEng
+    CkptMgr --> ReplayEng
+
