@@ -60,5 +60,9 @@ TEST(TypesTest, TraceEventSerialization) {
 
 TEST(TypesTest, ArchitectureCheck) {
     EXPECT_TRUE(IS_SUPPORTED_ARCH);
+#if defined(__aarch64__)
+    EXPECT_STREQ(SUPPORTED_ARCHITECTURE, "aarch64");
+#else
     EXPECT_STREQ(SUPPORTED_ARCHITECTURE, "x86_64");
+#endif
 }

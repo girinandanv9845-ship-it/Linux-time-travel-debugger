@@ -16,6 +16,9 @@ namespace ttd {
 #if defined(__x86_64__) || defined(_M_X64)
 constexpr const char* SUPPORTED_ARCHITECTURE = "x86_64";
 constexpr bool IS_SUPPORTED_ARCH = true;
+#elif defined(__aarch64__)
+constexpr const char* SUPPORTED_ARCHITECTURE = "aarch64";
+constexpr bool IS_SUPPORTED_ARCH = true;
 #else
 constexpr const char* SUPPORTED_ARCHITECTURE = "unsupported";
 constexpr bool IS_SUPPORTED_ARCH = false;

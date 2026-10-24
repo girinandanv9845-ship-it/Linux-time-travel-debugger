@@ -13,6 +13,9 @@
 #include <iomanip>
 #include <sstream>
 #include <iostream>
+#if defined(__aarch64__)
+#include <elf.h>
+#endif
 
 namespace ttd {
 
@@ -164,6 +167,34 @@ bool TracingEngine::get_registers(Registers& out_regs, std::string& out_error) {
     out_regs.es     = regs.es;
     out_regs.fs     = regs.fs;
     out_regs.gs     = regs.gs;
+    return true;
+#elif defined(__aarch64__)
+    // ARM64 has no PTRACE_GETREGS; read NT_PRSTATUS and map onto the x86-named fields.
+    struct user_regs_struct regs;
+    struct iovec iov{&regs, sizeof(regs)};
+    if (ptrace(PTRACE_GETREGSET, pid_, reinterpret_cast<void*>(NT_PRSTATUS), &iov) < 0) {
+        out_error = "ptrace(PTRACE_GETREGSET) failed: " + std::string(strerror(errno));
+        last_error_ = out_error;
+        return false;
+    }
+    out_regs.rip    = regs.pc;
+    out_regs.rsp    = regs.sp;
+    out_regs.rbp    = regs.regs[29];
+    out_regs.rax    = regs.regs[0];
+    out_regs.rbx    = regs.regs[1];
+    out_regs.rcx    = regs.regs[2];
+    out_regs.rdx    = regs.regs[3];
+    out_regs.rsi    = regs.regs[4];
+    out_regs.rdi    = regs.regs[5];
+    out_regs.r8     = regs.regs[8];
+    out_regs.r9     = regs.regs[9];
+    out_regs.r10    = regs.regs[10];
+    out_regs.r11    = regs.regs[11];
+    out_regs.r12    = regs.regs[12];
+    out_regs.r13    = regs.regs[13];
+    out_regs.r14    = regs.regs[14];
+    out_regs.r15    = regs.regs[15];
+    out_regs.eflags = regs.pstate;
     return true;
 #else
     out_error = "Unsupported CPU architecture for register inspection";
